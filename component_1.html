@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+        }
+        button {
+            padding: 2px 5px;
+            height: 24px;
+            cursor: pointer;
+            color: rgb(236, 183, 86);
+            border: 1px solid rgb(236, 183, 86);
+            background-color:rgba(0, 0, 0, 0);
+            border-radius: 12px;
+        }
+        .alert, .confirm {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .alert .frame, .confirm .frame {
+            width: 25%;
+            max-height: 35%;
+            overflow-y: auto;
+            background-color: white;
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;   
+            align-items: center;
+            padding-bottom: 5px;
+            border-radius: 5px;
+        }
+        .toast {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: black;
+            position: absolute;
+            padding: 5px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            transition: background-color 3s ease-out, color 3s ease-out;
+        }
+        .toast.active {
+            background-color: rgba(0, 0, 0, 0);
+            color: rgba(0, 0, 0, 0);
+        }
+        .frame .title {
+            display: block;
+            border-bottom: 1px solid black;
+            margin: 5px 5px 0 5px;
+        }
+        .frame .content {
+            margin: 5px 5px 0 5px;
+        }
+        .frame .button {
+            margin: 5px 5px 0 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="button0">alert</button>
+    <button id="button1">confirm</button>
+    <button id="button2">toast</button>
+
+    <script type="text/javascript">
+        const button0 = document.getElementById("button0");
+        const button1 = document.getElementById("button1");
+        const button2 = document.getElementById("button2");
+        button0.addEventListener("click", function() {
+            const title = "标题";
+            const content = "文本内容";
+            MyComponent.alert(title, content);
+        });
+        button1.addEventListener("click", function() {
+            const title = "标题";
+            const content = "文本内容";
+            const success = function() {
+                alert("yes");
+            };
+            const error = function() {
+                alert("no");
+            }
+            MyComponent.confirm(title, content, success, error);
+        });
+        button2.addEventListener("click", clickToast);
+        function clickToast() {
+            button2.removeEventListener("click", clickToast);
+
+            const content = "文本内容";
+            MyComponent.toast(content);
+
+            setTimeout(() => {
+                button2.addEventListener("click", clickToast);
+            }, 1000);
+        }
+        const MyComponent = new function() {
+            this.alert = function(title, content, fun) {
+                this.success = function() {
+                    if (fun !== undefined) {
+                        fun();
+                    }
+                    new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            resolve("成功");
+                            console.log("处理好了");
+                        }, 2000);
+                    }).then((data) => {
+                        console.log(data);
+                    }).catch((data) => {
+                        console.log(data);
+                    });
+                    let ele = document.getElementsByClassName("alert")[0];
+                    ele.remove();
+                }
+                const html = `
+                <div class="alert">
+                    <div class="frame">
+                        <h2 class="title">${title}</h2>
+                        <p class="content">${content}</p>
+                        <div class="button">
+                            <button onclick="MyComponent.success()">确定</button>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML("beforeend", html);
+            }
+            this.confirm = function(title, content, success, error) {
+                this.success = function() {
+                    if (success !== undefined) {
+                        success();
+                    }
+                    new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            resolve("成功");
+                            console.log("处理好了");
+                        }, 1000);
+                    }).then((data) => {
+                        console.log(data);
+                    }).catch((data) => {
+                        console.log(data);
+                    });
+                    let ele = document.getElementsByClassName("confirm")[0];
+                    ele.remove();
+                };
+                this.error = function() {
+                    if (error !== undefined) {
+                        error();
+                    }
+                    let ele = document.getElementsByClassName("confirm")[0];
+                    ele.remove();
+                };
+                let html = `
+                <div class="confirm">
+                    <div class="frame">
+                        <h2 class="title">${title}</h2>
+                        <p class="content">${content}</p>
+                        <div class="button">
+                            <button onclick="MyComponent.success()">确定</button>
+                            <button onclick="MyComponent.error()">取消</button>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML("beforeend", html);
+            }
+            this.toast = function(content) {
+                let html = `<div class="toast">${content}</div>`;
+                document.body.insertAdjacentHTML("beforeend", html);
+                setTimeout(function() {
+                    const eles = document.getElementsByClassName("toast");
+                    const ele = eles[eles.length - 1];
+                    ele.classList.add('active');
+                    ele.addEventListener("transitionend", function(event) {
+                        ele.remove();
+                    });
+                }, 0);
+            }
+        }
+    </script>
+</body>
+
+</html>
