@@ -98,15 +98,25 @@
             }
             MyComponent.confirm(title, content, success, error);
         });
-        button2.addEventListener("click", clickToast);
-        function clickToast() {
-            button2.removeEventListener("click", clickToast);
+        button2.addEventListener("click", clickToast2);
+        function clickToast1() {
+            button2.removeEventListener("click", clickToast1);
 
             const content = "文本内容";
             MyComponent.toast(content);
 
             setTimeout(() => {
-                button2.addEventListener("click", clickToast);
+                button2.addEventListener("click", clickToast1);
+            }, 1000);
+        }
+        let label;
+        function clickToast2() {
+            const content = "文本内容";
+            
+            clearTimeout(label);
+            label = setTimeout(() => {
+                MyComponent.toast(content);
+                console.log("Test");
             }, 1000);
         }
         const MyComponent = new function() {
@@ -179,16 +189,19 @@
                 document.body.insertAdjacentHTML("beforeend", html);
             }
             this.toast = function(content) {
-                let html = `<div class="toast">${content}</div>`;
-                document.body.insertAdjacentHTML("beforeend", html);
-                setTimeout(function() {
-                    const eles = document.getElementsByClassName("toast");
-                    const ele = eles[eles.length - 1];
-                    ele.classList.add('active');
-                    ele.addEventListener("transitionend", function(event) {
+                let ele = document.createElement("DIV");
+                let node = document.createTextNode(content);
+                ele.appendChild(node);
+                ele.className = "toast";
+                document.body.appendChild(ele);
+                setTimeout(() => {
+                    let eles = document.getElementsByClassName("toast");
+                    let ele = eles[eles.length - 1];
+                    ele.classList.add("active");
+                    ele.addEventListener("transitionend", function() {
                         ele.remove();
                     });
-                }, 0);
+                }, 1);
             }
         }
     </script>
