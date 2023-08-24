@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+      #my-slider {
+        position: relative;
+        width: 707px;
+        height: 471px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      a {
+        cursor: pointer;
+      }
+      .slider-list ul {
+        width: 100%;
+        height: 100%;
+      }
+      .slider-list img {
+        width: 707px;
+        height: 471px;
+      }
+      .slider-list .slider-list__item {
+        position: absolute;
+        opacity: 0;
+      }
+      .slider-list .slider-list__item--selected {
+        position: absolute;
+        opacity: 1;
+        transition: opacity 1s ease-in-out;
+      }
+      .slider-list .slider-list__prev, 
+      .slider-list .slider-list__next {
+        position: absolute;
+        top: 50%;
+        background-color: rgba(0, 0, 0, 0.5);
+        transform: translate(0, -50%);
+        height: 30px;
+        width: 15px;
+        line-height: 30px;
+        text-align: center;
+        color: white;
+        opacity: 0;
+      }
+      .slider-list .slider-list__prev {
+        left: 0;
+      }
+      .slider-list .slider-list__next {
+        right: 0;
+      }
+      .slider-list:hover .slider-list__prev, 
+      .slider-list:hover .slider-list__next {
+        transition: opacity 1s ease-in-out;
+        opacity: 1;
+      }
+      .slider-list__control {
+        display: table;
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, 0);
+        bottom: 10px;
+        background-color: rgba(0, 0, 0, 0.3);
+        margin: auto;
+        line-height: 100%;
+        border-radius: 8px;
+      }
+      .slider-list__control .slider-list__control-button,
+      .slider-list__control .slider-list__control-button--selected {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        margin: 5px;
+        border-radius: 50%;
+      }
+      .slider-list__control .slider-list__control-button {
+        background-color: white;
+      }
+      .slider-list__control .slider-list__control-button--selected {
+        background-color: red;
+        transition: background-color 1s ease-in-out;
+      }
+    </style>
+</head>
+
+<body>
+    <div id="my-slider" class="slider-list"></div>
+    <script type="text/javascript">
+      class Component {
+        constructor(id, options = {name, data: []}) {
+          this.options = options;
+          this.container = document.getElementById(id);
+          this.container.innerHTML = this.render(this.options.data);
+        }
+        registerPlugins(...plugins) {
+          plugins.map((plugin) => {
+            const container = document.createElement('div');
+            container.className = `${this.options.name}__plugin`;
+            container.innerHTML = plugin.render(this.options.data);
+            this.container.appendChild(container);
+            plugin.action(this);
+          });
+        }
+        render() {
+          return '';
+        }
+      }
+      class Slider extends Component {
+        constructor(id, options = {name: 'slider-list', data: [], cycle: 1000}) {
+          super(id, options);
+          this.cycle = options.cycle;
+          this.items = this.container.querySelectorAll('.slider-list__item, .slider-list__item--selected');
+        }
+        render(data) {
+          const li = data.map((d, index) => `
+            <li class=${index === 0 ? "slider-list__item--selected": "slider-list__item"}>
+              <img src=${d}>
+            </li>`);
+          return (`<ul>${li.join('')}</ul>`);
+        }
+        getSelectedItem() {
+          return this.container.querySelector('.slider-list__item--selected');
+        }
+        getSelectedItemIndex() {
+          return Array.from(this.items).indexOf(this.getSelectedItem());
+        }
+        slideTo(index) {
+          const options = {
+              bubbles: true,
+              detail: {index}
+          };
+          const event = new CustomEvent('slide', options);
+          this.container.dispatchEvent(event);
+          const cur = this.getSelectedItem();
+          const next = this.items[index];
+          cur.className = 'slider-list__item';
+          next.className = 'slider-list__item--selected';
+        }
+        slidePrev() {
+          const index = this.getSelectedItemIndex();
+          const prev = (this.items.length + index - 1) % this.items.length;
+          this.slideTo(prev);
+        }
+        slideNext() {
+          const index = this.getSelectedItemIndex();
+          const next = (index + 1) % this.items.length;
+          this.slideTo(next);
+        }
+        start() {
+          this.stop();
+          this._timer = setInterval(() => {
+            this.slideNext();
+          }, this.cycle);
+        }
+        stop() {
+          clearInterval(this._timer);
+        }
+      }
+      const pluginControl = {
+        containerClassName: "slider-list__control",
+        className: "slider-list__control-button",
+        selectedClassName: "slider-list__control-button--selected",
+        render(data) {
+          const div = document.createElement('div');
+          div.className = this.containerClassName;
+          const a = data.map((d, index) =>
+            `<a class=${index === 0 ? this.selectedClassName: this.className}></a>`
+          );
+          return (`
+          <div class=${this.containerClassName}>
+            ${a.join('')}
+          </div>`);
+        },
+        action(slider) {
+          const container = slider.container.querySelector(`.${this.containerClassName}`);
+          const buttons = container.querySelectorAll(`.${this.className}, .${this.className}--selected`);
+          Array.from(buttons).map((button, index) => {
+            button.addEventListener('mouseover', (e) => {
+              const index = Array.from(buttons).indexOf(e.target);
+              if (index >= 0) {
+                slider.stop();
+                slider.slideTo(index);
+                e.preventDefault();
+              }
+            });
+            button.addEventListener('mouseout', (e) => {
+              slider.start();
+            });
+          });
+          slider.container.addEventListener('slide', (e) => {
+            const cur = slider.getSelectedItemIndex();
+            const next = e.detail.index;
+            buttons[cur].className = this.className;
+            buttons[next].className = `${this.className}--selected`;
+          });
+        }
+      }
+      const pluginPrev = {
+        className: "slider-list__prev",
+        render() {
+          return `<a class=${this.className}>&lt</a>`;
+        },
+        action(slider) {
+          const prev = slider.container.querySelector(`.${this.className}`);
+          prev.addEventListener('click', (e) => {
+            slider.stop();
+            slider.slidePrev();
+            slider.start();
+            e.preventDefault();
+          });
+        }
+      }
+      const pluginNext = {
+        className: 'slider-list__next',
+        render() {
+          return `<a class=${this.className}>&gt</a>`;
+        },
+        action(slider) {
+          const prev = slider.container.querySelector(`.${this.className}`);
+          prev.addEventListener('click', (e) => {
+            slider.stop();
+            slider.slideNext();
+            slider.start();
+            e.preventDefault();
+          });
+        }
+      }
+      const slider = new Slider('my-slider', {
+        name: 'slider-list',
+        data: ['https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F44442b7e-5ad0-49cd-95ce-b3e6ab44cdfd%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1695419173&t=fdf29e7677f1f001cd3732741d92f7b2', 
+        'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2Fed00787c-0746-46aa-9faf-d59a942d9638%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1695419173&t=48e8aa0deb703e5ed1251c1262273d6c', 
+        'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F7540f29d-c0f0-47e0-b83d-034a30f091c9%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1695419173&t=5cebfe9ee1801edd726c6d3668b0430d',
+        'https://f.chongwunet.com/chongwunet/202102/22/8f960490c16f69.jpg'],
+        cycle: 3000
+      });
+      slider.registerPlugins(pluginControl, pluginPrev, pluginNext);
+      slider.start();
+    </script>
+</body>
+
+</html>
