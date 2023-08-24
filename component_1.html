@@ -98,26 +98,24 @@
             }
             MyComponent.confirm(title, content, success, error);
         });
-        button2.addEventListener("click", clickToast2);
-        function clickToast1() {
-            button2.removeEventListener("click", clickToast1);
+        button2.addEventListener("click", debounce);
+        function throttle(e, cycle = 1000) {
+            button2.removeEventListener("click", throttle);
 
             const content = "文本内容";
             MyComponent.toast(content);
-
             setTimeout(() => {
-                button2.addEventListener("click", clickToast1);
-            }, 1000);
+                button2.addEventListener("click", throttle);
+            }, cycle);
         }
         let label;
-        function clickToast2() {
+        function debounce(e, cycle = 1000) {
             const content = "文本内容";
             
             clearTimeout(label);
             label = setTimeout(() => {
                 MyComponent.toast(content);
-                console.log("Test");
-            }, 1000);
+            }, cycle);
         }
         const MyComponent = new function() {
             this.alert = function(title, content, fun) {
